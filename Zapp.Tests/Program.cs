@@ -1,95 +1,68 @@
 ﻿using Zapp.Core.Models;
-using Zapp.Core.Utilities;
+using Zapp.Core.Services;
 using Zapp.Infrastructure.Network;
-using Zapp.Infrastructure.Persistence;
 
-// test rssi distance estimation and proximity zones
-var distanceImmediate = BleSignalEstimator.EstimateDistanceMeters(-55);
-var distanceFar = BleSignalEstimator.EstimateDistanceMeters(-85);
+// initialize simulated node adapters
+var aliceRadio = new SimulatedTransportAdapter();
+var bobRadio = new SimulatedTransportAdapter();
+var charlieRadio = new SimulatedTransportAdapter();
 
-if (distanceImmediate <= 0 || distanceFar <= distanceImmediate)
-{
-    // terminate on invalid distance evaluation
-    Console.Error.WriteLine("[FAIL] rssi path loss calculation mismatch");
-    return 1;
-}
+// link nodes into a shared virtual radio cell
+aliceRadio.ConnectToNode(bobRadio);
+aliceRadio.ConnectToNode(charlieRadio);
 
-if (BleSignalEstimator.ResolveProximityZone(-55) != "Immediate" ||
-    BleSignalEstimator.ResolveProximityZone(-88) != "Far")
-{
-    // terminate on proximity zone mapping fault
-    Console.Error.WriteLine("[FAIL] proximity zone mapping fault");
-    return 1;
-}
+var bobReceivedPackets = new List<NetworkPacket>();
+var charlieReceivedPackets = new List<NetworkPacket>();
 
-// test discovery service and event pipeline
-var discoveryService = new SimulatedBleDiscoveryService();
-var testDbPath = Path.Combine(Path.GetTempPath(), $"zapp_ble_test_{Guid.NewGuid():N}.db");
-var repository = new SqliteMessageRepository(testDbPath);
-await repository.InitializeAsync();
+bobRadio.PacketReceived += (_, packet) => bobReceivedPackets.Add(packet);
+charlieRadio.PacketReceived += (_, packet) => charlieReceivedPackets.Add(packet);
 
-var discoveredCount = 0;
-
-// subscribe to peer discovery event stream
-discoveryService.PeerDiscovered += async (_, advert) =>
-{
-    // increment received beacon counter
-    Interlocked.Increment(ref discoveredCount);
-
-    // persist discovered node into repository
-    var peer = new PeerNode(
-        PublicKey: advert.PublicKeyBase64,
-        DisplayName: advert.DisplayName,
-        LastSeenTicks: advert.ObservedAtTicks,
-        Rssi: advert.Rssi,
-        IsPaired: false
-    );
-    await repository.UpsertPeerAsync(peer);
-};
-
-// initiate scanning
-await discoveryService.StartScanningAsync();
-
-// inject simulated beacon
-var mockAdvertisement = new DiscoveredPeerAdvertisement(
-    DeviceAddress: "AA:BB:CC:DD:EE:FF",
-    ServiceUuid: "0000FEAA-0000-1000-8000-00805F9B34FB",
-    PublicKeyBase64: "pub_peer_ble_test",
-    DisplayName: "Radar Test Node",
-    Rssi: -62,
-    ObservedAtTicks: DateTimeOffset.UtcNow.Ticks
+// test 1: direct point-to-point transmission
+var directPacket = new NetworkPacket(
+    PacketId: Guid.NewGuid().ToString(),
+    Type: PacketType.Direct,
+    SenderPublicKey: "pub_alice",
+    RecipientPublicKey: "pub_bob",
+    Ttl: 3,
+    Payload: "p2p_direct_message",
+    Signature: "sig_direct",
+    Timestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds()
 );
 
-discoveryService.InjectSimulatedPeer(mockAdvertisement);
+var selector = new TransportStrategySelector(new[] { aliceRadio });
+var directSendResult = await selector.RoutePacketAsync(directPacket, targetAddress: "device_bob");
 
-// allow short async event processing delay
-await Task.Delay(100);
-
-if (discoveredCount != 1)
+if (!directSendResult.IsSuccess || bobReceivedPackets.Count != 1)
 {
-    // terminate on missed discovery event
-    Console.Error.WriteLine("[FAIL] discovery event was not received by subscriber");
+    // terminate on direct transmission failure
+    Console.Error.WriteLine("[FAIL] point-to-point direct message delivery failed");
     return 1;
 }
 
-// verify peer entry stored in sqlite
-var peersResult = await repository.GetPeersAsync();
-if (!peersResult.IsSuccess || peersResult.Value!.Count != 1)
+// test 2: broadcast packet delivery
+var broadcastPacket = new NetworkPacket(
+    PacketId: Guid.NewGuid().ToString(),
+    Type: PacketType.Broadcast,
+    SenderPublicKey: "pub_alice",
+    RecipientPublicKey: "0000",
+    Ttl: 1,
+    Payload: "emergency_broadcast_alert",
+    Signature: "sig_broadcast",
+    Timestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+);
+
+bobReceivedPackets.Clear();
+charlieReceivedPackets.Clear();
+
+var broadcastResult = await selector.RoutePacketAsync(broadcastPacket);
+
+if (!broadcastResult.IsSuccess || bobReceivedPackets.Count != 1 || charlieReceivedPackets.Count != 1)
 {
-    // terminate on storage persistence mismatch
-    Console.Error.WriteLine("[FAIL] discovered peer was not persisted to sqlite store");
+    // terminate on broadcast flood delivery failure
+    Console.Error.WriteLine("[FAIL] broadcast transmission failed to reach all neighbors");
     return 1;
-}
-
-// stop scanning
-await discoveryService.StopScanningAsync();
-
-// clean up test database
-if (File.Exists(testDbPath))
-{
-    File.Delete(testDbPath);
 }
 
 // print confirmation on overall success
-Console.WriteLine("[PASS] ble signal estimation and neighbor discovery pipeline tests succeeded");
+Console.WriteLine("[PASS] p2p direct transport and broadcast strategy tests succeeded");
 return 0;
