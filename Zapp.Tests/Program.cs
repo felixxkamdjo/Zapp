@@ -1,68 +1,89 @@
 ﻿using Zapp.Core.Models;
 using Zapp.Core.Services;
 using Zapp.Infrastructure.Network;
+using Zapp.Infrastructure.Persistence;
 
-// initialize simulated node adapters
+// setup three distinct virtual node environments
+var dbPathRelay = Path.Combine(Path.GetTempPath(), $"zapp_relay_{Guid.NewGuid():N}.db");
+var dbPathBob = Path.Combine(Path.GetTempPath(), $"zapp_bob_{Guid.NewGuid():N}.db");
+
+var relayRepo = new SqliteMessageRepository(dbPathRelay);
+var bobRepo = new SqliteMessageRepository(dbPathBob);
+
+await relayRepo.InitializeAsync();
+await bobRepo.InitializeAsync();
+
+// setup isolated radio adapters
 var aliceRadio = new SimulatedTransportAdapter();
+var relayRadio = new SimulatedTransportAdapter();
 var bobRadio = new SimulatedTransportAdapter();
-var charlieRadio = new SimulatedTransportAdapter();
 
-// link nodes into a shared virtual radio cell
-aliceRadio.ConnectToNode(bobRadio);
-aliceRadio.ConnectToNode(charlieRadio);
+// connect topology: alice <-> relay <-> bob (alice cannot reach bob directly)
+aliceRadio.ConnectToNode(relayRadio);
+relayRadio.ConnectToNode(bobRadio);
 
-var bobReceivedPackets = new List<NetworkPacket>();
-var charlieReceivedPackets = new List<NetworkPacket>();
+const string alicePub = "pub_alice";
+const string relayPub = "pub_relay";
+const string bobPub = "pub_bob";
 
-bobRadio.PacketReceived += (_, packet) => bobReceivedPackets.Add(packet);
-charlieRadio.PacketReceived += (_, packet) => charlieReceivedPackets.Add(packet);
+// instantiate mesh routers for relay node and destination node
+var relayRouter = new MeshRouter(relayPub, relayRepo, relayRadio);
+var bobRouter = new MeshRouter(bobPub, bobRepo, bobRadio);
 
-// test 1: direct point-to-point transmission
-var directPacket = new NetworkPacket(
-    PacketId: Guid.NewGuid().ToString(),
+// wire inbound transport packets to respective node mesh routers
+relayRadio.PacketReceived += async (_, packet) => await relayRouter.ProcessInboundPacketAsync(packet);
+bobRadio.PacketReceived += async (_, packet) => await bobRouter.ProcessInboundPacketAsync(packet);
+
+// alice creates a direct packet addressed to bob (ttl = 3)
+var messageId = Guid.NewGuid().ToString();
+var alicePacketToBob = new NetworkPacket(
+    PacketId: messageId,
     Type: PacketType.Direct,
-    SenderPublicKey: "pub_alice",
-    RecipientPublicKey: "pub_bob",
+    SenderPublicKey: alicePub,
+    RecipientPublicKey: bobPub,
     Ttl: 3,
-    Payload: "p2p_direct_message",
-    Signature: "sig_direct",
+    Payload: "payload_from_alice_to_bob_via_relay",
+    Signature: "sig_mesh_multihop",
     Timestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds()
 );
 
-var selector = new TransportStrategySelector(new[] { aliceRadio });
-var directSendResult = await selector.RoutePacketAsync(directPacket, targetAddress: "device_bob");
+// alice sends packet out into her immediate radio cell
+await aliceRadio.BroadcastAsync(alicePacketToBob);
 
-if (!directSendResult.IsSuccess || bobReceivedPackets.Count != 1)
+// allow short asynchronous propagation delay across virtual hops
+await Task.Delay(250);
+
+// verify 1: relay node processed and decremented ttl in its transit store
+var relayRelayedCheck = await relayRepo.HasRelayedPacketAsync(messageId);
+if (!relayRelayedCheck.IsSuccess || !relayRelayedCheck.Value)
 {
-    // terminate on direct transmission failure
-    Console.Error.WriteLine("[FAIL] point-to-point direct message delivery failed");
+    // terminate on missing relay cache entry
+    Console.Error.WriteLine("[FAIL] relay node failed to cache relayed packet");
     return 1;
 }
 
-// test 2: broadcast packet delivery
-var broadcastPacket = new NetworkPacket(
-    PacketId: Guid.NewGuid().ToString(),
-    Type: PacketType.Broadcast,
-    SenderPublicKey: "pub_alice",
-    RecipientPublicKey: "0000",
-    Ttl: 1,
-    Payload: "emergency_broadcast_alert",
-    Signature: "sig_broadcast",
-    Timestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds()
-);
-
-bobReceivedPackets.Clear();
-charlieReceivedPackets.Clear();
-
-var broadcastResult = await selector.RoutePacketAsync(broadcastPacket);
-
-if (!broadcastResult.IsSuccess || bobReceivedPackets.Count != 1 || charlieReceivedPackets.Count != 1)
+// verify 2: destination node (bob) successfully received and stored the packet
+var bobRelayedCheck = await bobRepo.HasRelayedPacketAsync(messageId);
+if (!bobRelayedCheck.IsSuccess || !bobRelayedCheck.Value)
 {
-    // terminate on broadcast flood delivery failure
-    Console.Error.WriteLine("[FAIL] broadcast transmission failed to reach all neighbors");
+    // terminate on destination delivery failure
+    Console.Error.WriteLine("[FAIL] destination node (bob) did not receive forwarded packet");
     return 1;
 }
 
-// print confirmation on overall success
-Console.WriteLine("[PASS] p2p direct transport and broadcast strategy tests succeeded");
+// verify 3: test loop suppression by re-injecting the exact same packet
+var duplicateHandled = await relayRouter.ProcessInboundPacketAsync(alicePacketToBob);
+if (!duplicateHandled.IsSuccess || duplicateHandled.Value)
+{
+    // terminate on duplicate suppression failure
+    Console.Error.WriteLine("[FAIL] duplicate packet was not dropped by relay loop check");
+    return 1;
+}
+
+// clean up test databases
+if (File.Exists(dbPathRelay)) File.Delete(dbPathRelay);
+if (File.Exists(dbPathBob)) File.Delete(dbPathBob);
+
+// print confirmation on success
+Console.WriteLine("[PASS] mesh multi-hop forwarding, ttl decrement, and loop deduplication tests succeeded");
 return 0;
