@@ -1,0 +1,28 @@
+## Build and output folders
+[Bb]in/
+[Oo]bj/
+out/
+
+## Visual Studio & JetBrains Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## .NET MAUI & Mobile
+*.apk
+*.aab
+*.keystore
+*.jks
+*.ipa
+.generated/
+
+## OS Files
+.DS_Store
+Thumbs.db
+
+## Environment & Secrets
+.env
+*.local

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Zapp.App/Zapp.App.csproj" />
+  <Project Path="Zapp.Core/Zapp.Core.csproj" />
+  <Project Path="Zapp.Infrastructure/Zapp.Infrastructure.csproj" />
+</Solution>
