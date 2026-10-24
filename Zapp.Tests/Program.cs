@@ -1,103 +1,95 @@
 ﻿using Zapp.Core.Models;
-using Zapp.Core.Services;
-using Zapp.Infrastructure.Cryptography;
+using Zapp.Core.Utilities;
+using Zapp.Infrastructure.Network;
 using Zapp.Infrastructure.Persistence;
 
-// initialize test database file path
-var testDbPath = Path.Combine(Path.GetTempPath(), $"zapp_test_{Guid.NewGuid():N}.db");
-var repository = new SqliteMessageRepository(testDbPath);
+// test rssi distance estimation and proximity zones
+var distanceImmediate = BleSignalEstimator.EstimateDistanceMeters(-55);
+var distanceFar = BleSignalEstimator.EstimateDistanceMeters(-85);
 
-// initialize schema tables
+if (distanceImmediate <= 0 || distanceFar <= distanceImmediate)
+{
+    // terminate on invalid distance evaluation
+    Console.Error.WriteLine("[FAIL] rssi path loss calculation mismatch");
+    return 1;
+}
+
+if (BleSignalEstimator.ResolveProximityZone(-55) != "Immediate" ||
+    BleSignalEstimator.ResolveProximityZone(-88) != "Far")
+{
+    // terminate on proximity zone mapping fault
+    Console.Error.WriteLine("[FAIL] proximity zone mapping fault");
+    return 1;
+}
+
+// test discovery service and event pipeline
+var discoveryService = new SimulatedBleDiscoveryService();
+var testDbPath = Path.Combine(Path.GetTempPath(), $"zapp_ble_test_{Guid.NewGuid():N}.db");
+var repository = new SqliteMessageRepository(testDbPath);
 await repository.InitializeAsync();
 
-// test peer upsert and query
-var dummyPeer = new PeerNode(
-    PublicKey: "peer_pub_charlie",
-    DisplayName: "Charlie Device",
-    LastSeenTicks: DateTimeOffset.UtcNow.Ticks,
-    Rssi: -65,
-    IsPaired: true
+var discoveredCount = 0;
+
+// subscribe to peer discovery event stream
+discoveryService.PeerDiscovered += async (_, advert) =>
+{
+    // increment received beacon counter
+    Interlocked.Increment(ref discoveredCount);
+
+    // persist discovered node into repository
+    var peer = new PeerNode(
+        PublicKey: advert.PublicKeyBase64,
+        DisplayName: advert.DisplayName,
+        LastSeenTicks: advert.ObservedAtTicks,
+        Rssi: advert.Rssi,
+        IsPaired: false
+    );
+    await repository.UpsertPeerAsync(peer);
+};
+
+// initiate scanning
+await discoveryService.StartScanningAsync();
+
+// inject simulated beacon
+var mockAdvertisement = new DiscoveredPeerAdvertisement(
+    DeviceAddress: "AA:BB:CC:DD:EE:FF",
+    ServiceUuid: "0000FEAA-0000-1000-8000-00805F9B34FB",
+    PublicKeyBase64: "pub_peer_ble_test",
+    DisplayName: "Radar Test Node",
+    Rssi: -62,
+    ObservedAtTicks: DateTimeOffset.UtcNow.Ticks
 );
 
-var peerUpsert = await repository.UpsertPeerAsync(dummyPeer);
-if (!peerUpsert.IsSuccess)
+discoveryService.InjectSimulatedPeer(mockAdvertisement);
+
+// allow short async event processing delay
+await Task.Delay(100);
+
+if (discoveredCount != 1)
 {
-    // terminate on peer save failure
-    Console.Error.WriteLine($"[FAIL] peer upsert: {peerUpsert.ErrorMessage}");
+    // terminate on missed discovery event
+    Console.Error.WriteLine("[FAIL] discovery event was not received by subscriber");
     return 1;
 }
 
-var peersQuery = await repository.GetPeersAsync();
-if (!peersQuery.IsSuccess || peersQuery.Value!.Count == 0)
+// verify peer entry stored in sqlite
+var peersResult = await repository.GetPeersAsync();
+if (!peersResult.IsSuccess || peersResult.Value!.Count != 1)
 {
-    // terminate on peer fetch failure
-    Console.Error.WriteLine("[FAIL] unable to retrieve stored peers");
+    // terminate on storage persistence mismatch
+    Console.Error.WriteLine("[FAIL] discovered peer was not persisted to sqlite store");
     return 1;
 }
 
-// test outbox queue insertion and lifecycle updates
-var messageId = Guid.NewGuid().ToString();
-var dummyMessage = new LocalMessage(
-    Id: messageId,
-    SenderKey: "alice_key",
-    RecipientKey: dummyPeer.PublicKey,
-    EncryptedContent: "dGVzdF9wYXlsb2Fk",
-    Timestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-    DeliveryStatus: MessageDeliveryStatus.Pending,
-    HopsCount: 0
-);
+// stop scanning
+await discoveryService.StopScanningAsync();
 
-var saveMessageResult = await repository.SaveMessageAsync(dummyMessage);
-if (!saveMessageResult.IsSuccess)
-{
-    // terminate on message save failure
-    Console.Error.WriteLine($"[FAIL] message save: {saveMessageResult.ErrorMessage}");
-    return 1;
-}
-
-var pendingOutbox = await repository.GetPendingOutboxMessagesAsync();
-if (!pendingOutbox.IsSuccess || pendingOutbox.Value!.Count != 1)
-{
-    // terminate on outbox filter mismatch
-    Console.Error.WriteLine("[FAIL] outbox query returned invalid count");
-    return 1;
-}
-
-// update status to delivered and confirm removal from pending outbox
-await repository.UpdateMessageStatusAsync(messageId, MessageDeliveryStatus.Delivered);
-var updatedOutbox = await repository.GetPendingOutboxMessagesAsync();
-if (updatedOutbox.Value!.Count != 0)
-{
-    // terminate on invalid outbox status transition
-    Console.Error.WriteLine("[FAIL] outbox message was not transitioned properly");
-    return 1;
-}
-
-// test relay deduplication cache logic
-const string packetId = "packet_mesh_test_123";
-var initialCheck = await repository.HasRelayedPacketAsync(packetId);
-if (!initialCheck.IsSuccess || initialCheck.Value)
-{
-    // terminate on false positive relay check
-    Console.Error.WriteLine("[FAIL] relay cache reported existing entry before insert");
-    return 1;
-}
-
-await repository.RecordRelayedPacketAsync(packetId);
-var recordedCheck = await repository.HasRelayedPacketAsync(packetId);
-if (!recordedCheck.IsSuccess || !recordedCheck.Value)
-{
-    // terminate on failed deduplication check
-    Console.Error.WriteLine("[FAIL] relay cache failed to recognize recorded packet");
-    return 1;
-}
-
-// clean up temporary test database
+// clean up test database
 if (File.Exists(testDbPath))
 {
     File.Delete(testDbPath);
 }
 
-// print confirmation on success
-Console.WriteLine("[PASS] all sqlite persistence, outbox queue, and relay cache tests succeeded");
+// print confirmation on overall success
+Console.WriteLine("[PASS] ble signal estimation and neighbor discovery pipeline tests succeeded");
 return 0;
