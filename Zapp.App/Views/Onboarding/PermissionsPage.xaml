@@ -61,7 +61,7 @@
         </VerticalStackLayout>
 
         <!-- start action button -->
-        <Button Grid.Row="2" 
+        <Button Grid.Row="2" Clicked="OnStartConfigurationClicked" 
                 Text="Démarrer la configuration" 
                 Style="{StaticResource ZappPrimaryButton}" />
     </Grid>
