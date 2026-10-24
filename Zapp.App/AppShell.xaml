@@ -7,10 +7,17 @@
     xmlns:chats="clr-namespace:Zapp.App.Views.Chats"
     xmlns:broadcast="clr-namespace:Zapp.App.Views.Broadcast"
     xmlns:mesh="clr-namespace:Zapp.App.Views.Mesh"
+    xmlns:settings="clr-namespace:Zapp.App.Views.Settings"
     Shell.FlyoutBehavior="Disabled"
     BackgroundColor="{StaticResource AppBackground}">
 
     <TabBar>
+        <Tab Title="FAQ" Icon="dotnet_bot.png">
+            <ShellContent
+                Title="FAQ"
+                ContentTemplate="{DataTemplate settings:FaqAssistantPage}"
+                Route="FaqAssistantPage" />
+        </Tab>
         <Tab Title="Radar" Icon="dotnet_bot.png">
             <ShellContent
                 Title="Radar"

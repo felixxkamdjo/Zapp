@@ -6,6 +6,7 @@ using Zapp.App.Views.Chats;
 using Zapp.App.Views.Mesh;
 using Zapp.App.Views.Onboarding;
 using Zapp.App.Views.Radar;
+using Zapp.App.Views.Settings;
 using Zapp.Core.Interfaces;
 using Zapp.Core.Services;
 using Zapp.Infrastructure.Cryptography;
@@ -49,6 +50,7 @@ public static class MauiProgram
         builder.Services.AddTransient<RadarViewModel>();
         builder.Services.AddTransient<MeshQueueViewModel>();
         builder.Services.AddTransient<BroadcastViewModel>();
+        builder.Services.AddTransient<FaqViewModel>();
         builder.Services.AddTransient<ChatsViewModel>(sp =>
         {
             var repo = sp.GetRequiredService<IMessageRepository>();
@@ -61,10 +63,12 @@ public static class MauiProgram
 
         // register view pages
         builder.Services.AddTransient<PermissionsPage>();
+        builder.Services.AddTransient<MeshIntroPage>();
         builder.Services.AddTransient<RadarPage>();
         builder.Services.AddTransient<ChatDetailPage>();
         builder.Services.AddTransient<MeshQueuePage>();
         builder.Services.AddTransient<BroadcastAlertsPage>();
+        builder.Services.AddTransient<FaqAssistantPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

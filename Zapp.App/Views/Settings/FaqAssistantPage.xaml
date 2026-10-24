@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Zapp.App.ViewModels"
+             x:Class="Zapp.App.Views.Settings.FaqAssistantPage"
+             x:DataType="vm:FaqViewModel"
+             BackgroundColor="{StaticResource AppBackground}"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="20,40,20,16" RowSpacing="16">
+        <!-- header title -->
+        <Label Grid.Row="0" 
+               Text="FAQ &amp; Assistant" 
+               TextColor="{StaticResource TextPrimary}" 
+               FontAttributes="Bold" 
+               FontSize="22" />
+
+        <!-- search bar container -->
+        <Border Grid.Row="1" 
+                BackgroundColor="{StaticResource SurfaceBackground}" 
+                Stroke="{StaticResource SurfaceBorder}" 
+                StrokeShape="RoundRectangle 16" 
+                Padding="14,0">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" VerticalOptions="Center">
+                <Label Grid.Column="0" Text="&#xe8b6;" FontFamily="MaterialIcons" TextColor="{StaticResource TextMuted}" FontSize="20" VerticalOptions="Center" />
+                <Entry Grid.Column="1" 
+                       Text="{Binding SearchQuery}" 
+                       Placeholder="Rechercher une question..." 
+                       PlaceholderColor="{StaticResource TextMuted}" 
+                       TextColor="{StaticResource TextPrimary}" 
+                       HeightRequest="48" />
+            </Grid>
+        </Border>
+
+        <!-- accordion list -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Spacing="12">
+                <CollectionView ItemsSource="{Binding FilteredFaqItems}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FaqItem">
+                            <Border Style="{StaticResource ZappCard}" Margin="0,0,0,10" Padding="16">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleExpandCommand}" />
+                                </Border.GestureRecognizers>
+
+                                <VerticalStackLayout Spacing="12">
+                                    <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="12" VerticalOptions="Center">
+                                        <!-- category icon -->
+                                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource SurfaceElevated}" Stroke="{StaticResource SurfaceBorder}">
+                                            <Label Text="{Binding IconGlyph}" FontFamily="MaterialIcons" TextColor="{StaticResource PrimaryGlow}" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+
+                                        <!-- header labels -->
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                            <Label Text="{Binding Title}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="15" />
+                                            <Label Text="{Binding Subtitle}" TextColor="{StaticResource TextMuted}" FontSize="12" />
+                                        </VerticalStackLayout>
+
+                                        <!-- chevron icon -->
+                                        <Label Grid.Column="2" 
+                                               Text="&#xe5cc;" 
+                                               FontFamily="MaterialIcons" 
+                                               TextColor="{StaticResource TextMuted}" 
+                                               FontSize="20" 
+                                               VerticalOptions="Center" />
+                                    </Grid>
+
+                                    <!-- expandable explanation text -->
+                                    <Label Text="{Binding Content}" 
+                                           TextColor="{StaticResource TextSecondary}" 
+                                           FontSize="13" 
+                                           LineHeight="1.3"
+                                           IsVisible="{Binding IsExpanded}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- offline assistant card -->
+                <Border Style="{StaticResource ZappCard}" Stroke="{StaticResource PrimaryAccent}" Padding="16">
+                    <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="12" VerticalOptions="Center">
+                        <Border Grid.Column="0" WidthRequest="40" HeightRequest="40" StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource PrimaryAccent}">
+                            <Label Text="AI" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="13" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                            <Label Text="Besoin d'aide ?" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="15" />
+                            <Label Text="Posez votre question, même hors ligne." TextColor="{StaticResource TextMuted}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="2" Text="&#xe5cc;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" FontSize="20" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
