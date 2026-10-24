@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- define core oled dark theme color tokens -->
+    <Color x:Key="AppBackground">#0B0F19</Color>
+    <Color x:Key="SurfaceBackground">#121927</Color>
+    <Color x:Key="SurfaceBorder">#1E293B</Color>
+    <Color x:Key="SurfaceElevated">#172033</Color>
+    
+    <Color x:Key="PrimaryAccent">#2563EB</Color>
+    <Color x:Key="PrimaryGlow">#3B82F6</Color>
+    <Color x:Key="AlertRed">#EF4444</Color>
+    <Color x:Key="WarningOrange">#F59E0B</Color>
+    <Color x:Key="SuccessGreen">#10B981</Color>
+
+    <Color x:Key="TextPrimary">#F8FAFC</Color>
+    <Color x:Key="TextSecondary">#94A3B8</Color>
+    <Color x:Key="TextMuted">#64748B</Color>
+
+    <!-- define button style matching onboarding and scan actions -->
+    <Style x:Key="ZappPrimaryButton" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryAccent}" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="CornerRadius" Value="25" />
+        <Setter Property="HeightRequest" Value="52" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="16" />
+    </Style>
+
+    <!-- define flat 2.0 card frame style -->
+    <Style x:Key="ZappCard" TargetType="Border">
+        <Setter Property="Stroke" Value="{StaticResource SurfaceBorder}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="BackgroundColor" Value="{StaticResource SurfaceBackground}" />
+        <Setter Property="Padding" Value="16" />
+    </Style>
+</ResourceDictionary>

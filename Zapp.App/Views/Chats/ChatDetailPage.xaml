@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Zapp.App.Views.Chats.ChatDetailPage"
+             BackgroundColor="{StaticResource AppBackground}"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16,40,16,16" RowSpacing="12">
+        <!-- conversation header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+            <Label Grid.Column="0" Text="&#xe5cb;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" FontSize="24" VerticalOptions="Center" />
+            <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center">
+                <Label Text="Alice_Crypt" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="18" HorizontalOptions="Center" />
+                <Label Text="À 10 m · BLE Direct" TextColor="{StaticResource TextSecondary}" FontSize="12" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+            <Label Grid.Column="2" Text="&#xe5d4;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" FontSize="24" VerticalOptions="Center" />
+        </Grid>
+
+        <!-- encryption status banner -->
+        <Border Grid.Row="1" BackgroundColor="{StaticResource SurfaceBackground}" Stroke="{StaticResource SurfaceBorder}" StrokeShape="RoundRectangle 8" Padding="8">
+            <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
+                <Label Text="&#xe897;" FontFamily="MaterialIcons" TextColor="{StaticResource PrimaryGlow}" FontSize="14" VerticalOptions="Center" />
+                <Label Text="Conversation chiffrée de bout en bout" TextColor="{StaticResource TextSecondary}" FontSize="11" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Border>
+
+        <!-- messages list container -->
+        <CollectionView Grid.Row="2" ItemsSource="{Binding Messages}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Padding="0,4">
+                        <!-- message bubble -->
+                        <Border BackgroundColor="{StaticResource PrimaryAccent}" StrokeShape="RoundRectangle 16" HorizontalOptions="End" Padding="12,8">
+                            <Label Text="{Binding EncryptedContent}" TextColor="{StaticResource TextPrimary}" FontSize="14" />
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- input toolbar -->
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+            <Label Grid.Column="0" Text="&#xe226;" FontFamily="MaterialIcons" TextColor="{StaticResource TextSecondary}" FontSize="24" VerticalOptions="Center" />
+            <Border Grid.Column="1" BackgroundColor="{StaticResource SurfaceBackground}" Stroke="{StaticResource SurfaceBorder}" StrokeShape="RoundRectangle 24" Padding="16,0">
+                <Entry Text="{Binding OutgoingText}" Placeholder="Écrire un message..." PlaceholderColor="{StaticResource TextMuted}" TextColor="{StaticResource TextPrimary}" HeightRequest="44" />
+            </Border>
+            <Border Grid.Column="2" HeightRequest="44" WidthRequest="44" BackgroundColor="{StaticResource PrimaryAccent}" StrokeShape="RoundRectangle 22">
+                <Label Text="&#xe163;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

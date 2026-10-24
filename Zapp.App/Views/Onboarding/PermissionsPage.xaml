@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Zapp.App.Views.Onboarding.PermissionsPage"
+             BackgroundColor="{StaticResource AppBackground}"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="24,48,24,24" RowSpacing="24">
+        <!-- header section -->
+        <VerticalStackLayout Grid.Row="0" Spacing="8">
+            <Label Text="Permissions &amp; Souveraineté" 
+                   TextColor="{StaticResource TextPrimary}" 
+                   FontSize="24" 
+                   FontAttributes="Bold" />
+            <Label Text="Pour fonctionner, ZAPP a besoin de certaines autorisations. Elles restent sur votre appareil et ne sont jamais transmises sur le web." 
+                   TextColor="{StaticResource TextSecondary}" 
+                   FontSize="14" 
+                   LineHeight="1.2" />
+        </VerticalStackLayout>
+
+        <!-- permission toggles container -->
+        <VerticalStackLayout Grid.Row="1" Spacing="16" VerticalOptions="Center">
+            <!-- bluetooth card -->
+            <Border Style="{StaticResource ZappCard}">
+                <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="12" VerticalOptions="Center">
+                    <Border Grid.Column="0" HeightRequest="40" WidthRequest="40" StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource PrimaryAccent}">
+                        <Label Text="&#xf294;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                        <Label Text="Bluetooth" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="16" />
+                        <Label Text="Pour détecter les pairs à proximité" TextColor="{StaticResource TextSecondary}" FontSize="12" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="2" IsToggled="True" OnColor="{StaticResource PrimaryAccent}" />
+                </Grid>
+            </Border>
+
+            <!-- wifi card -->
+            <Border Style="{StaticResource ZappCard}">
+                <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="12" VerticalOptions="Center">
+                    <Border Grid.Column="0" HeightRequest="40" WidthRequest="40" StrokeShape="RoundRectangle 20" BackgroundColor="{StaticResource PrimaryAccent}">
+                        <Label Text="&#xf1eb;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                        <Label Text="Wi-Fi local" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="16" />
+                        <Label Text="Pour la connexion directe" TextColor="{StaticResource TextSecondary}" FontSize="12" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="2" IsToggled="True" OnColor="{StaticResource PrimaryAccent}" />
+                </Grid>
+            </Border>
+
+            <!-- privacy shield banner -->
+            <Border Style="{StaticResource ZappCard}" BackgroundColor="#0F2422" Stroke="#10B981">
+                <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
+                    <Label Text="&#xe8e8;" FontFamily="MaterialIcons" TextColor="{StaticResource SuccessGreen}" FontSize="24" VerticalOptions="Center" />
+                    <VerticalStackLayout VerticalOptions="Center">
+                        <Label Text="Aucune donnée ne sort de votre appareil." TextColor="{StaticResource SuccessGreen}" FontAttributes="Bold" FontSize="13" />
+                        <Label Text="Zéro suivi. Zéro serveur." TextColor="{StaticResource TextMuted}" FontSize="11" />
+                    </VerticalStackLayout>
+                </HorizontalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+
+        <!-- start action button -->
+        <Button Grid.Row="2" 
+                Text="Démarrer la configuration" 
+                Style="{StaticResource ZappPrimaryButton}" />
+    </Grid>
+</ContentPage>
