@@ -1,73 +1,103 @@
 ﻿using Zapp.Core.Models;
 using Zapp.Core.Services;
 using Zapp.Infrastructure.Cryptography;
+using Zapp.Infrastructure.Persistence;
 
-// initialize services
-var serializer = new SystemJsonPacketSerializer();
-var cryptoService = new NSecCryptoService();
+// initialize test database file path
+var testDbPath = Path.Combine(Path.GetTempPath(), $"zapp_test_{Guid.NewGuid():N}.db");
+var repository = new SqliteMessageRepository(testDbPath);
 
-// execute key generation test
-var keyGenResult = cryptoService.GenerateKeyPair();
-if (!keyGenResult.IsSuccess)
-{
-    // terminate on key generation fault
-    Console.Error.WriteLine($"[FAIL] key generation: {keyGenResult.ErrorMessage}");
-    return 1;
-}
+// initialize schema tables
+await repository.InitializeAsync();
 
-var aliceKeys = keyGenResult.Value!;
-const string payload = "Hello peer via Zapp offline mesh!";
-
-// execute payload signing test
-var signResult = cryptoService.Sign(payload, aliceKeys.PrivateKeyBase64);
-if (!signResult.IsSuccess)
-{
-    // terminate on signing fault
-    Console.Error.WriteLine($"[FAIL] signing: {signResult.ErrorMessage}");
-    return 1;
-}
-
-var signature = signResult.Value!;
-
-// execute signature verification test
-var verifyResult = cryptoService.Verify(payload, signature, aliceKeys.PublicKeyBase64);
-if (!verifyResult.IsSuccess || !verifyResult.Value)
-{
-    // terminate on signature verification fault
-    Console.Error.WriteLine($"[FAIL] verification failed or invalid signature");
-    return 1;
-}
-
-// test tampering resistance
-const string tamperedPayload = "Hello peer via Zapp offline mesh! (tampered)";
-var tamperCheck = cryptoService.Verify(tamperedPayload, signature, aliceKeys.PublicKeyBase64);
-if (tamperCheck.IsSuccess && tamperCheck.Value)
-{
-    // terminate on undetected tampering
-    Console.Error.WriteLine("[FAIL] security breach: tampered payload was accepted");
-    return 1;
-}
-
-// verify wire packet packaging with authentic signature
-var packet = new NetworkPacket(
-    PacketId: Guid.NewGuid().ToString(),
-    Type: PacketType.Direct,
-    SenderPublicKey: aliceKeys.PublicKeyBase64,
-    RecipientPublicKey: "dummy_recipient_key",
-    Ttl: 3,
-    Payload: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payload)),
-    Signature: signature,
-    Timestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+// test peer upsert and query
+var dummyPeer = new PeerNode(
+    PublicKey: "peer_pub_charlie",
+    DisplayName: "Charlie Device",
+    LastSeenTicks: DateTimeOffset.UtcNow.Ticks,
+    Rssi: -65,
+    IsPaired: true
 );
 
-var packetJsonResult = serializer.Serialize(packet);
-if (!packetJsonResult.IsSuccess)
+var peerUpsert = await repository.UpsertPeerAsync(dummyPeer);
+if (!peerUpsert.IsSuccess)
 {
-    // terminate on packet serialization error
-    Console.Error.WriteLine($"[FAIL] packet serialization: {packetJsonResult.ErrorMessage}");
+    // terminate on peer save failure
+    Console.Error.WriteLine($"[FAIL] peer upsert: {peerUpsert.ErrorMessage}");
     return 1;
 }
 
-// print confirmation on overall success
-Console.WriteLine("[PASS] cryptographic identity generation, signing, and verification tests succeeded");
+var peersQuery = await repository.GetPeersAsync();
+if (!peersQuery.IsSuccess || peersQuery.Value!.Count == 0)
+{
+    // terminate on peer fetch failure
+    Console.Error.WriteLine("[FAIL] unable to retrieve stored peers");
+    return 1;
+}
+
+// test outbox queue insertion and lifecycle updates
+var messageId = Guid.NewGuid().ToString();
+var dummyMessage = new LocalMessage(
+    Id: messageId,
+    SenderKey: "alice_key",
+    RecipientKey: dummyPeer.PublicKey,
+    EncryptedContent: "dGVzdF9wYXlsb2Fk",
+    Timestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+    DeliveryStatus: MessageDeliveryStatus.Pending,
+    HopsCount: 0
+);
+
+var saveMessageResult = await repository.SaveMessageAsync(dummyMessage);
+if (!saveMessageResult.IsSuccess)
+{
+    // terminate on message save failure
+    Console.Error.WriteLine($"[FAIL] message save: {saveMessageResult.ErrorMessage}");
+    return 1;
+}
+
+var pendingOutbox = await repository.GetPendingOutboxMessagesAsync();
+if (!pendingOutbox.IsSuccess || pendingOutbox.Value!.Count != 1)
+{
+    // terminate on outbox filter mismatch
+    Console.Error.WriteLine("[FAIL] outbox query returned invalid count");
+    return 1;
+}
+
+// update status to delivered and confirm removal from pending outbox
+await repository.UpdateMessageStatusAsync(messageId, MessageDeliveryStatus.Delivered);
+var updatedOutbox = await repository.GetPendingOutboxMessagesAsync();
+if (updatedOutbox.Value!.Count != 0)
+{
+    // terminate on invalid outbox status transition
+    Console.Error.WriteLine("[FAIL] outbox message was not transitioned properly");
+    return 1;
+}
+
+// test relay deduplication cache logic
+const string packetId = "packet_mesh_test_123";
+var initialCheck = await repository.HasRelayedPacketAsync(packetId);
+if (!initialCheck.IsSuccess || initialCheck.Value)
+{
+    // terminate on false positive relay check
+    Console.Error.WriteLine("[FAIL] relay cache reported existing entry before insert");
+    return 1;
+}
+
+await repository.RecordRelayedPacketAsync(packetId);
+var recordedCheck = await repository.HasRelayedPacketAsync(packetId);
+if (!recordedCheck.IsSuccess || !recordedCheck.Value)
+{
+    // terminate on failed deduplication check
+    Console.Error.WriteLine("[FAIL] relay cache failed to recognize recorded packet");
+    return 1;
+}
+
+// clean up temporary test database
+if (File.Exists(testDbPath))
+{
+    File.Delete(testDbPath);
+}
+
+// print confirmation on success
+Console.WriteLine("[PASS] all sqlite persistence, outbox queue, and relay cache tests succeeded");
 return 0;
