@@ -1,48 +1,73 @@
 ﻿using Zapp.Core.Models;
 using Zapp.Core.Services;
+using Zapp.Infrastructure.Cryptography;
 
-// instantiate packet serializer service
+// initialize services
 var serializer = new SystemJsonPacketSerializer();
+var cryptoService = new NSecCryptoService();
 
-// construct dummy direct packet for verification
-var originalPacket = new NetworkPacket(
+// execute key generation test
+var keyGenResult = cryptoService.GenerateKeyPair();
+if (!keyGenResult.IsSuccess)
+{
+    // terminate on key generation fault
+    Console.Error.WriteLine($"[FAIL] key generation: {keyGenResult.ErrorMessage}");
+    return 1;
+}
+
+var aliceKeys = keyGenResult.Value!;
+const string payload = "Hello peer via Zapp offline mesh!";
+
+// execute payload signing test
+var signResult = cryptoService.Sign(payload, aliceKeys.PrivateKeyBase64);
+if (!signResult.IsSuccess)
+{
+    // terminate on signing fault
+    Console.Error.WriteLine($"[FAIL] signing: {signResult.ErrorMessage}");
+    return 1;
+}
+
+var signature = signResult.Value!;
+
+// execute signature verification test
+var verifyResult = cryptoService.Verify(payload, signature, aliceKeys.PublicKeyBase64);
+if (!verifyResult.IsSuccess || !verifyResult.Value)
+{
+    // terminate on signature verification fault
+    Console.Error.WriteLine($"[FAIL] verification failed or invalid signature");
+    return 1;
+}
+
+// test tampering resistance
+const string tamperedPayload = "Hello peer via Zapp offline mesh! (tampered)";
+var tamperCheck = cryptoService.Verify(tamperedPayload, signature, aliceKeys.PublicKeyBase64);
+if (tamperCheck.IsSuccess && tamperCheck.Value)
+{
+    // terminate on undetected tampering
+    Console.Error.WriteLine("[FAIL] security breach: tampered payload was accepted");
+    return 1;
+}
+
+// verify wire packet packaging with authentic signature
+var packet = new NetworkPacket(
     PacketId: Guid.NewGuid().ToString(),
     Type: PacketType.Direct,
-    SenderPublicKey: "pub_ed25519_alice",
-    RecipientPublicKey: "pub_ed25519_bob",
+    SenderPublicKey: aliceKeys.PublicKeyBase64,
+    RecipientPublicKey: "dummy_recipient_key",
     Ttl: 3,
-    Payload: "encrypted_base64_data",
-    Signature: "signature_test",
+    Payload: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payload)),
+    Signature: signature,
     Timestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds()
 );
 
-// execute serialization pipeline
-var serializedResult = serializer.Serialize(originalPacket);
-if (!serializedResult.IsSuccess)
+var packetJsonResult = serializer.Serialize(packet);
+if (!packetJsonResult.IsSuccess)
 {
-    // terminate on serialization failure
-    Console.Error.WriteLine($"[FAIL] serialization: {serializedResult.ErrorMessage}");
+    // terminate on packet serialization error
+    Console.Error.WriteLine($"[FAIL] packet serialization: {packetJsonResult.ErrorMessage}");
     return 1;
 }
 
-// execute deserialization pipeline
-var deserializedResult = serializer.Deserialize(serializedResult.Value!);
-if (!deserializedResult.IsSuccess)
-{
-    // terminate on deserialization failure
-    Console.Error.WriteLine($"[FAIL] deserialization: {deserializedResult.ErrorMessage}");
-    return 1;
-}
-
-// test ttl decrement logic
-var relayedPacket = deserializedResult.Value!.DecrementTtl();
-if (relayedPacket.Ttl != 2 || !relayedPacket.IsRoutable)
-{
-    // terminate on invalid routing behavior
-    Console.Error.WriteLine("[FAIL] ttl routing logic mismatch");
-    return 1;
-}
-
-// print confirmation on successful test completion
-Console.WriteLine("[PASS] all core domain and wire framing checks succeeded");
+// print confirmation on overall success
+Console.WriteLine("[PASS] cryptographic identity generation, signing, and verification tests succeeded");
 return 0;

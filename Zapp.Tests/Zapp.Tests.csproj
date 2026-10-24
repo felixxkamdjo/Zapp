@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Zapp.Core\Zapp.Core.csproj" />
+    <ProjectReference Include="..\Zapp.Infrastructure\Zapp.Infrastructure.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
