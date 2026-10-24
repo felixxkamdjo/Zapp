@@ -5,11 +5,19 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:radar="clr-namespace:Zapp.App.Views.Radar"
     xmlns:chats="clr-namespace:Zapp.App.Views.Chats"
-    xmlns:onboarding="clr-namespace:Zapp.App.Views.Onboarding"
+    xmlns:broadcast="clr-namespace:Zapp.App.Views.Broadcast"
+    xmlns:mesh="clr-namespace:Zapp.App.Views.Mesh"
+    xmlns:settings="clr-namespace:Zapp.App.Views.Settings"
     Shell.FlyoutBehavior="Disabled"
     BackgroundColor="{StaticResource AppBackground}">
 
     <TabBar>
+        <Tab Title="FAQ" Icon="dotnet_bot.png">
+            <ShellContent
+                Title="FAQ"
+                ContentTemplate="{DataTemplate settings:FaqAssistantPage}"
+                Route="FaqAssistantPage" />
+        </Tab>
         <Tab Title="Radar" Icon="dotnet_bot.png">
             <ShellContent
                 Title="Radar"
@@ -22,11 +30,17 @@
                 ContentTemplate="{DataTemplate chats:ChatDetailPage}"
                 Route="ChatDetailPage" />
         </Tab>
-        <Tab Title="Permissions" Icon="dotnet_bot.png">
+        <Tab Title="Broadcast" Icon="dotnet_bot.png">
             <ShellContent
-                Title="Permissions"
-                ContentTemplate="{DataTemplate onboarding:PermissionsPage}"
-                Route="PermissionsPage" />
+                Title="Broadcast"
+                ContentTemplate="{DataTemplate broadcast:BroadcastAlertsPage}"
+                Route="BroadcastAlertsPage" />
+        </Tab>
+        <Tab Title="Relais" Icon="dotnet_bot.png">
+            <ShellContent
+                Title="Relais"
+                ContentTemplate="{DataTemplate mesh:MeshQueuePage}"
+                Route="MeshQueuePage" />
         </Tab>
     </TabBar>
 

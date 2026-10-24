@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Zapp.App.ViewModels"
+             x:Class="Zapp.App.Views.Broadcast.BroadcastAlertsPage"
+             x:DataType="vm:BroadcastViewModel"
+             BackgroundColor="{StaticResource AppBackground}"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Padding="16,40,16,16" RowSpacing="12">
+        <!-- header navigation title -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+            <Label Grid.Column="0" Text="&#xe5cb;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" FontSize="24" VerticalOptions="Center" />
+            <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" VerticalOptions="Center">
+                <Label Text="#Alertes locales" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="18" />
+                <Label Text="{Binding ConnectedPeersCount, StringFormat='{0} pairs · 3 relais'}" TextColor="{StaticResource TextSecondary}" FontSize="12" />
+            </VerticalStackLayout>
+            <Label Grid.Column="2" Text="&#xe63e;" FontFamily="MaterialIcons" TextColor="{StaticResource PrimaryGlow}" FontSize="22" VerticalOptions="Center" />
+        </Grid>
+
+        <!-- public channel privacy banner -->
+        <Border Grid.Row="1" BackgroundColor="#1E1911" Stroke="{StaticResource WarningOrange}" StrokeShape="RoundRectangle 8" Padding="10,6">
+            <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
+                <Label Text="&#xe8e8;" FontFamily="MaterialIcons" TextColor="{StaticResource WarningOrange}" FontSize="14" VerticalOptions="Center" />
+                <Label Text="Canal public local · Contenu visible par les pairs" TextColor="{StaticResource WarningOrange}" FontSize="11" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Border>
+
+        <!-- alerts collection view -->
+        <CollectionView Grid.Row="2" ItemsSource="{Binding Alerts}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:BroadcastAlertItem">
+                    <Border Style="{StaticResource ZappCard}" Margin="0,0,0,10" Padding="14">
+                        <VerticalStackLayout Spacing="10">
+                            <!-- alert author row -->
+                            <Grid ColumnDefinitions="36,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+                                <Border Grid.Column="0" WidthRequest="36" HeightRequest="36" StrokeShape="RoundRectangle 18" BackgroundColor="{StaticResource SurfaceElevated}" Stroke="{StaticResource SurfaceBorder}">
+                                    <Label Text="{Binding Initials}" TextColor="{StaticResource TextPrimary}" FontSize="11" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                    <Label Text="{Binding SenderAlias}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="14" />
+                                    <Label Text="{Binding Timestamp, StringFormat='{0} · Direct'}" TextColor="{StaticResource TextMuted}" FontSize="11" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <!-- alert message body -->
+                            <Label Text="{Binding MessageText}" TextColor="{StaticResource TextPrimary}" FontSize="13" LineHeight="1.2" />
+
+                            <!-- propagation badge -->
+                            <Border StrokeShape="RoundRectangle 12" BackgroundColor="{StaticResource SurfaceElevated}" HorizontalOptions="Start" Padding="8,4">
+                                <Label Text="{Binding ReachablePeersCount, StringFormat='Portée · {0} pairs'}" TextColor="{StaticResource SuccessGreen}" FontSize="11" FontAttributes="Bold" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- mark urgent toggle -->
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*" ColumnSpacing="8" VerticalOptions="Center" Margin="4,0">
+            <CheckBox Grid.Column="0" IsChecked="{Binding MarkAsUrgent}" Color="{StaticResource AlertRed}" />
+            <Label Grid.Column="1" Text="Marquer comme urgent (priorité maximale sur le maillage)" TextColor="{StaticResource TextSecondary}" FontSize="12" VerticalOptions="Center" />
+        </Grid>
+
+        <!-- broadcast input toolbar -->
+        <Grid Grid.Row="4" ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+            <Border Grid.Column="0" BackgroundColor="{StaticResource SurfaceBackground}" Stroke="{StaticResource SurfaceBorder}" StrokeShape="RoundRectangle 24" Padding="16,0">
+                <Entry Text="{Binding PublicMessageText}" Placeholder="Message public..." PlaceholderColor="{StaticResource TextMuted}" TextColor="{StaticResource TextPrimary}" HeightRequest="44" />
+            </Border>
+            <Border Grid.Column="1" HeightRequest="44" WidthRequest="44" BackgroundColor="{StaticResource PrimaryAccent}" StrokeShape="RoundRectangle 22">
+                <Label Text="&#xe163;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SendBroadcastCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

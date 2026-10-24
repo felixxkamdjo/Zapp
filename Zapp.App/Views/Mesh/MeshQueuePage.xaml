@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Zapp.App.ViewModels"
+             x:Class="Zapp.App.Views.Mesh.MeshQueuePage"
+             x:DataType="vm:MeshQueueViewModel"
+             BackgroundColor="{StaticResource AppBackground}"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="20,40,20,20" RowSpacing="20">
+        <!-- top header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
+            <Label Grid.Column="0" Text="&#xe5cb;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" FontSize="24" VerticalOptions="Center" />
+            <Label Grid.Column="1" Text="File &amp; relais Mesh" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="20" Margin="12,0,0,0" VerticalOptions="Center" />
+        </Grid>
+
+        <!-- 3 metrics cards row -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="10">
+            <!-- allocated mb -->
+            <Border Grid.Column="0" Style="{StaticResource ZappCard}" Padding="12">
+                <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
+                    <Label Text="{Binding AllocatedMb, StringFormat='{0:F1}'}" TextColor="{StaticResource PrimaryGlow}" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center" />
+                    <Label Text="Mo alloués" TextColor="{StaticResource TextMuted}" FontSize="11" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- relayed packets -->
+            <Border Grid.Column="1" Style="{StaticResource ZappCard}" Padding="12">
+                <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
+                    <Label Text="{Binding RelayedPacketsCount}" TextColor="{StaticResource TextPrimary}" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center" />
+                    <Label Text="Paquets relayés" TextColor="{StaticResource TextMuted}" FontSize="11" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- expired packets -->
+            <Border Grid.Column="2" Style="{StaticResource ZappCard}" Padding="12">
+                <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
+                    <Label Text="{Binding ExpiredPacketsCount}" TextColor="{StaticResource TextSecondary}" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center" />
+                    <Label Text="Expirés" TextColor="{StaticResource TextMuted}" FontSize="11" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- memory progress gauge -->
+        <VerticalStackLayout Grid.Row="2" Spacing="8">
+            <ProgressBar Progress="0.38" ProgressColor="{StaticResource PrimaryAccent}" BackgroundColor="{StaticResource SurfaceBorder}" HeightRequest="6" />
+            <Grid ColumnDefinitions="*,*">
+                <Label Grid.Column="0" Text="18,4 Mo utilisés" TextColor="{StaticResource TextMuted}" FontSize="11" />
+                <Label Grid.Column="1" Text="48 Mo max." TextColor="{StaticResource TextMuted}" FontSize="11" HorizontalOptions="End" />
+            </Grid>
+        </VerticalStackLayout>
+
+        <!-- in transit packets list & switch -->
+        <VerticalStackLayout Grid.Row="3" Spacing="16">
+            <Label Text="EN ATTENTE DE RELAIS · 3" TextColor="{StaticResource TextMuted}" FontSize="12" FontAttributes="Bold" />
+
+            <CollectionView ItemsSource="{Binding TransitPackets}" HeightRequest="220">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TransitPacketItem">
+                        <Border Style="{StaticResource ZappCard}" Margin="0,0,0,10" Padding="14">
+                            <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="12" VerticalOptions="Center">
+                                <Border Grid.Column="0" WidthRequest="36" HeightRequest="36" StrokeShape="RoundRectangle 18" BackgroundColor="{StaticResource SurfaceElevated}" Stroke="{StaticResource SurfaceBorder}">
+                                    <Label Text="&#xe80d;" FontFamily="MaterialIcons" TextColor="{StaticResource PrimaryGlow}" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                    <Label Text="{Binding DestinationHash, StringFormat='Destination {0}'}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="14" />
+                                    <Label Text="{Binding NextHopAlias, StringFormat='Via {0}'}" TextColor="{StaticResource TextSecondary}" FontSize="11" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center">
+                                    <Label Text="{Binding RemainingTime}" TextColor="{StaticResource WarningOrange}" FontAttributes="Bold" FontSize="14" HorizontalOptions="End" />
+                                    <Label Text="restant" TextColor="{StaticResource TextMuted}" FontSize="10" HorizontalOptions="End" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- opportunistic relay toggle -->
+            <Border Style="{StaticResource ZappCard}">
+                <Grid ColumnDefinitions="36,*,Auto" ColumnSpacing="12" VerticalOptions="Center">
+                    <Label Grid.Column="0" Text="&#xe63e;" FontFamily="MaterialIcons" TextColor="{StaticResource SuccessGreen}" FontSize="22" VerticalOptions="Center" />
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                        <Label Text="Relais opportuniste" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="14" />
+                        <Label Text="Transmettre les paquets chiffrés des autres" TextColor="{StaticResource TextMuted}" FontSize="11" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="2" IsToggled="{Binding IsOpportunisticRelayEnabled}" OnColor="{StaticResource PrimaryAccent}" />
+                </Grid>
+            </Border>
+        </VerticalStackLayout>
+
+        <!-- clear relay cache action button -->
+        <Button Grid.Row="4" 
+                Text="Vider le cache relais" 
+                Command="{Binding ClearRelayCacheCommand}"
+                BackgroundColor="Transparent"
+                BorderColor="{StaticResource AlertRed}"
+                BorderWidth="1"
+                TextColor="{StaticResource AlertRed}"
+                CornerRadius="25"
+                HeightRequest="50"
+                FontAttributes="Bold" />
+    </Grid>
+</ContentPage>

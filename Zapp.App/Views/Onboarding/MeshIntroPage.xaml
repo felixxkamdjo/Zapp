@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Zapp.App.Views.Onboarding.MeshIntroPage"
+             BackgroundColor="{StaticResource AppBackground}"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="24,48,24,24" RowSpacing="24">
+        <!-- top header -->
+        <VerticalStackLayout Grid.Row="0" Spacing="8">
+            <Label Text="Le Réseau Maillé (Mesh)" 
+                   TextColor="{StaticResource TextPrimary}" 
+                   FontSize="24" 
+                   FontAttributes="Bold" />
+            <Label Text="Chaque appareil peut relayer les messages. Vos données passent de proche en proche, sans jamais être lues par les nœuds intermédiaires." 
+                   TextColor="{StaticResource TextSecondary}" 
+                   FontSize="14" 
+                   LineHeight="1.3" />
+        </VerticalStackLayout>
+
+        <!-- mesh visual representation -->
+        <Grid Grid.Row="1" HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="260" HeightRequest="260">
+            <!-- dashed boundary circle -->
+            <Border WidthRequest="220" HeightRequest="220" Stroke="{StaticResource PrimaryGlow}" StrokeThickness="1" StrokeDashArray="4,4" StrokeShape="RoundRectangle 110" BackgroundColor="Transparent" HorizontalOptions="Center" VerticalOptions="Center" />
+            
+            <!-- central lock node -->
+            <Border WidthRequest="64" HeightRequest="64" Stroke="{StaticResource PrimaryAccent}" StrokeShape="RoundRectangle 32" BackgroundColor="#111E38" HorizontalOptions="Center" VerticalOptions="Center">
+                <Label Text="&#xe897;" FontFamily="MaterialIcons" TextColor="{StaticResource PrimaryGlow}" FontSize="24" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+
+            <!-- satellite relay device nodes -->
+            <Border WidthRequest="32" HeightRequest="52" Stroke="{StaticResource PrimaryGlow}" StrokeShape="RoundRectangle 8" BackgroundColor="{StaticResource SurfaceBackground}" HorizontalOptions="Center" VerticalOptions="Start">
+                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+            <Border WidthRequest="32" HeightRequest="52" Stroke="{StaticResource PrimaryGlow}" StrokeShape="RoundRectangle 8" BackgroundColor="{StaticResource SurfaceBackground}" HorizontalOptions="Center" VerticalOptions="End">
+                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+            <Border WidthRequest="52" HeightRequest="32" Stroke="{StaticResource PrimaryGlow}" StrokeShape="RoundRectangle 8" BackgroundColor="{StaticResource SurfaceBackground}" HorizontalOptions="Start" VerticalOptions="Center">
+                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+            <Border WidthRequest="52" HeightRequest="32" Stroke="{StaticResource PrimaryGlow}" StrokeShape="RoundRectangle 8" BackgroundColor="{StaticResource SurfaceBackground}" HorizontalOptions="End" VerticalOptions="Center">
+                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource TextPrimary}" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+        </Grid>
+
+        <!-- bottom navigation actions -->
+        <VerticalStackLayout Grid.Row="2" Spacing="20">
+            <!-- step dots indicator -->
+            <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource PrimaryAccent}" />
+                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource TextMuted}" />
+                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{StaticResource TextMuted}" />
+            </HorizontalStackLayout>
+
+            <!-- next button -->
+            <Button Text="Suivant &#x2192;" 
+                    Style="{StaticResource ZappPrimaryButton}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
