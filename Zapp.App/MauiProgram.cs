@@ -12,6 +12,7 @@ using Zapp.Core.Services;
 using Zapp.Infrastructure.Cryptography;
 using Zapp.Infrastructure.Network;
 using Zapp.Infrastructure.Persistence;
+using ZXing.Net.Maui.Controls;
 
 namespace Zapp.App;
 
@@ -24,6 +25,7 @@ public static class MauiProgram
         builder
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
+            .UseBarcodeReader()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -51,6 +53,14 @@ public static class MauiProgram
         builder.Services.AddTransient<MeshQueueViewModel>();
         builder.Services.AddTransient<BroadcastViewModel>();
         builder.Services.AddTransient<FaqViewModel>();
+        builder.Services.AddTransient<IdentityExchangeViewModel>(sp =>
+        {
+            var repo = sp.GetRequiredService<IMessageRepository>();
+            var crypto = sp.GetRequiredService<ICryptoService>();
+            var keys = crypto.GenerateKeyPair().Value!;
+            return new IdentityExchangeViewModel(repo, keys.PublicKeyBase64, "Mon_Terminal_Zapp");
+        });
+
         builder.Services.AddTransient<ChatsViewModel>(sp =>
         {
             var repo = sp.GetRequiredService<IMessageRepository>();
@@ -69,6 +79,7 @@ public static class MauiProgram
         builder.Services.AddTransient<MeshQueuePage>();
         builder.Services.AddTransient<BroadcastAlertsPage>();
         builder.Services.AddTransient<FaqAssistantPage>();
+        builder.Services.AddTransient<IdentityExchangePage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

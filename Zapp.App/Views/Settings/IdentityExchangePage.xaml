@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Zapp.App.ViewModels"
+             xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.MAUI.Controls"
+             x:Class="Zapp.App.Views.Settings.IdentityExchangePage"
+             x:DataType="vm:IdentityExchangeViewModel"
+             BackgroundColor="{StaticResource AppBackground}"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20,40,20,24" RowSpacing="20">
+        <!-- top header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
+            <Label Grid.Column="0" Text="&#xe5cb;" FontFamily="MaterialIcons" TextColor="{StaticResource TextPrimary}" FontSize="24" VerticalOptions="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackClicked" />
+                </Label.GestureRecognizers>
+            </Label>
+            <VerticalStackLayout Grid.Column="1" Margin="12,0,0,0" VerticalOptions="Center">
+                <Label Text="Échange d'Identité" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="18" />
+                <Label Text="Appairage sécurisé hors-ligne" TextColor="{StaticResource TextMuted}" FontSize="12" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <!-- content area: qr display or active camera -->
+        <Grid Grid.Row="1" VerticalOptions="Center">
+            <!-- state 1: personal qr code card -->
+            <Border Style="{StaticResource ZappCard}" 
+                    IsVisible="{Binding IsScannerActive, Converter={StaticResource InvertedBoolConverter}}"
+                    Padding="24" 
+                    HorizontalOptions="Center" 
+                    WidthRequest="280">
+                <VerticalStackLayout Spacing="16" HorizontalOptions="Center">
+                    <Border BackgroundColor="White" Padding="12" StrokeShape="RoundRectangle 12">
+                        <zxing:BarcodeGeneratorView 
+                            Format="QrCode"
+                            Value="{Binding QrCodeValue}"
+                            ForegroundColor="Black"
+                            BackgroundColor="White"
+                            HeightRequest="200"
+                            WidthRequest="200" />
+                    </Border>
+                    <Label Text="Faites scanner ce code à votre contact pour établir un canal de confiance direct." 
+                           TextColor="{StaticResource TextSecondary}" 
+                           FontSize="12" 
+                           HorizontalTextAlignment="Center" 
+                           LineHeight="1.2" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- state 2: camera optical reader -->
+            <Border Style="{StaticResource ZappCard}" 
+                    IsVisible="{Binding IsScannerActive}" 
+                    Padding="4" 
+                    HeightRequest="300" 
+                    WidthRequest="300">
+                <zxing:CameraBarcodeReaderView 
+                    BarcodesDetected="OnBarcodesDetected"
+                    IsDetecting="{Binding IsScannerActive}" />
+            </Border>
+        </Grid>
+
+        <!-- status message and toggle button -->
+        <VerticalStackLayout Grid.Row="2" Spacing="16">
+            <Label Text="{Binding StatusMessage}" 
+                   TextColor="{StaticResource SuccessGreen}" 
+                   FontSize="13" 
+                   HorizontalOptions="Center" 
+                   HorizontalTextAlignment="Center" />
+
+            <Button Text="{Binding IsScannerActive, Converter={StaticResource ScannerButtonTextConverter}}" 
+                    Command="{Binding ToggleScannerCommand}" 
+                    Style="{StaticResource ZappPrimaryButton}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
