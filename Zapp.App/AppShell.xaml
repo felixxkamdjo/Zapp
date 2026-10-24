@@ -3,12 +3,31 @@
     x:Class="Zapp.App.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:Zapp.App"
-    Title="Zapp.App">
+    xmlns:radar="clr-namespace:Zapp.App.Views.Radar"
+    xmlns:chats="clr-namespace:Zapp.App.Views.Chats"
+    xmlns:onboarding="clr-namespace:Zapp.App.Views.Onboarding"
+    Shell.FlyoutBehavior="Disabled"
+    BackgroundColor="{StaticResource AppBackground}">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <TabBar>
+        <Tab Title="Radar" Icon="dotnet_bot.png">
+            <ShellContent
+                Title="Radar"
+                ContentTemplate="{DataTemplate radar:RadarPage}"
+                Route="RadarPage" />
+        </Tab>
+        <Tab Title="Chats" Icon="dotnet_bot.png">
+            <ShellContent
+                Title="Chats"
+                ContentTemplate="{DataTemplate chats:ChatDetailPage}"
+                Route="ChatDetailPage" />
+        </Tab>
+        <Tab Title="Permissions" Icon="dotnet_bot.png">
+            <ShellContent
+                Title="Permissions"
+                ContentTemplate="{DataTemplate onboarding:PermissionsPage}"
+                Route="PermissionsPage" />
+        </Tab>
+    </TabBar>
 
 </Shell>
