@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ResourceDictionary 
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:converters="clr-namespace:Zapp.App.Converters">
+
+    <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    <converters:ScannerButtonTextConverter x:Key="ScannerButtonTextConverter" />
 
     <!-- define core oled dark theme color tokens -->
     <Color x:Key="AppBackground">#0B0F19</Color>
